@@ -1,0 +1,26 @@
+{
+  "name": "@shareparty/ai-worker",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Cloud Run worker: Vertex Gemini intake autofill (Step 3)",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@google-cloud/vertexai": "^1.9.3",
+    "@supabase/supabase-js": "^2.47.10",
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.17.10",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

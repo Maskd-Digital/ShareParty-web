@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground: #0f3d24;
+  --background: #fdf8f3;
+  --forest: #166534;
+  --forest-dark: #14532d;
+  --cream-deep: #f0e6d8;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+}
+
+/* Soft radial highlight (cream + green wash) */
+.bg-app-shell {
+  background-color: #fdf8f3;
+  background-image:
+    radial-gradient(ellipse 120% 80% at 50% -20%, rgba(34, 197, 94, 0.12), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 100% 0%, rgba(22, 101, 52, 0.06), transparent 45%);
+}
+
+@layer components {
+  .input-cream {
+    @apply w-full rounded-xl border border-cream-400/90 bg-cream-50 px-3 py-2.5 text-forest-900 shadow-sm outline-none transition-colors placeholder:text-forest-900/40 focus:border-leaf-500 focus:ring-2 focus:ring-leaf-500/25;
+  }
+  .btn-primary {
+    @apply w-full rounded-xl bg-forest-700 px-4 py-2.5 text-sm font-semibold text-cream-50 shadow-md transition hover:bg-forest-800 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-secondary {
+    @apply inline-flex w-full items-center justify-center rounded-xl border border-forest-800/25 bg-cream-100 px-4 py-2.5 text-sm font-semibold text-forest-800 transition hover:bg-cream-200;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}

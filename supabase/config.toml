@@ -1,0 +1,10 @@
+# Supabase local config — https://supabase.com/docs/guides/cli/config
+# Run: npx supabase start (requires Docker)
+
+project_id = "shareparty-web"
+
+[api]
+enabled = true
+
+[db]
+major_version = 15

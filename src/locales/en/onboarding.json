@@ -1,0 +1,22 @@
+{
+  "title": "Library onboarding",
+  "stepSettings": "Library & locale",
+  "stepPayments": "Payments",
+  "stepLegal": "Legal acknowledgements",
+  "stepGoLive": "Go live",
+  "libraryName": "Library name",
+  "librarySlug": "URL slug",
+  "locale": "Locale",
+  "currency": "Currency",
+  "billingPlatform": "Use ShareParty billing (Stripe Connect)",
+  "billingByo": "Use my own Stripe account (API keys)",
+  "connectStripe": "Connect with Stripe",
+  "byoSecret": "Stripe secret key (restricted recommended)",
+  "byoPublishable": "Stripe publishable key",
+  "byoWebhook": "Stripe webhook signing secret",
+  "saveByo": "Save and verify keys",
+  "dpaAck": "I acknowledge the Data Processing Addendum.",
+  "coppaAck": "I acknowledge COPPA obligations for children’s data in my market.",
+  "complete": "Complete setup",
+  "goLiveDone": "Your library is live at"
+}
