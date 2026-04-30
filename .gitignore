@@ -6,3 +6,8 @@ node_modules
 npm-debug.log*
 .vercel
 *.tsbuildinfo
+env
+
+# secrets
+env
+.env

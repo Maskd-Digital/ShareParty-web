@@ -1,0 +1,12 @@
+{
+    "experimentalServices": {
+        "frontend": {
+            "routePrefix": "/",
+            "framework": "nextjs"
+        },
+        "ai-worker": {
+            "entrypoint": "services/ai-worker",
+            "routePrefix": "/_/ai-worker"
+        }
+    }
+}

@@ -2,38 +2,22 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
 import { createClient } from "@/lib/supabase/server";
-import { MyProfileEditor, type MyProfile } from "@/components/MyProfileEditor";
+import { MembersManager } from "@/components/MembersManager";
 
-export default async function MyProfilePage() {
+export default async function MembersPage() {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: profileRow } = await supabase
-    .from("profiles")
-    .select(
-      "id,email,full_name,role,phone_number,date_of_birth,marketing_opt_in,notification_email,notification_push,terms_accepted_at",
-    )
-    .eq("id", user.id)
-    .maybeSingle();
-
+  const { data: profileRow } = await supabase.from("profiles").select("role").eq("id", user.id).single();
   const role = profileRow?.role ?? "member";
   if (role !== "operator") redirect("/dashboard");
 
-  const initial: MyProfile = {
-    id: user.id,
-    email: profileRow?.email ?? user.email ?? null,
-    full_name: profileRow?.full_name ?? null,
-    role: "operator",
-    phone_number: profileRow?.phone_number ?? null,
-    date_of_birth: profileRow?.date_of_birth ?? null,
-    marketing_opt_in: profileRow?.marketing_opt_in ?? false,
-    notification_email: profileRow?.notification_email ?? true,
-    notification_push: profileRow?.notification_push ?? true,
-    terms_accepted_at: profileRow?.terms_accepted_at ?? null,
-  };
+  const { data: libs } = await supabase.from("libraries").select("id,library_name").eq("owner_user_id", user.id).limit(1);
+  const active = libs?.[0] ?? null;
+  if (!active) redirect("/dashboard");
 
   return (
     <AppShell variant="dashboard">
@@ -47,13 +31,13 @@ export default async function MyProfilePage() {
             <Link href="/catalog" className="block rounded-lg px-3 py-2 text-forest-800/85 no-underline">
               Manage catalog
             </Link>
-            <Link href="/members" className="block rounded-lg px-3 py-2 text-forest-800/85 no-underline">
-              Members
-            </Link>
             <Link
-              href="/my-profile"
+              href="/members"
               className="block rounded-lg bg-forest-800 px-3 py-2 font-semibold text-cream-50 no-underline"
             >
+              Members
+            </Link>
+            <Link href="/my-profile" className="block rounded-lg px-3 py-2 text-forest-800/85 no-underline">
               My profile
             </Link>
             <Link href="/library-settings" className="block rounded-lg px-3 py-2 text-forest-800/85 no-underline">
@@ -63,7 +47,7 @@ export default async function MyProfilePage() {
         </aside>
 
         <main className="rounded-2xl border border-cream-300/90 bg-cream-50/90 p-6 shadow-card sm:p-8">
-          <MyProfileEditor initial={initial} />
+          <MembersManager libraryId={active.id} libraryName={active.library_name} />
         </main>
       </div>
     </AppShell>

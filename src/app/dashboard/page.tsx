@@ -81,7 +81,9 @@ export default async function DashboardPage() {
             <Link href="/catalog" className="block rounded-lg px-3 py-2 text-forest-800/85 no-underline">
               Manage catalog
             </Link>
-            <span className="block rounded-lg px-3 py-2 text-forest-800/85">Members</span>
+            <Link href="/members" className="block rounded-lg px-3 py-2 text-forest-800/85 no-underline">
+              Members
+            </Link>
             <Link href="/my-profile" className="block rounded-lg px-3 py-2 text-forest-800/85 no-underline">
               My profile
             </Link>
