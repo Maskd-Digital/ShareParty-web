@@ -32,3 +32,22 @@ export async function assertLibraryOperator(
     throw err;
   }
 }
+
+export async function assertLibraryMember(
+  supabase: SupabaseClient,
+  userId: string,
+  libraryId: string,
+): Promise<void> {
+  const { data, error } = await supabase
+    .from("memberships")
+    .select("user_id")
+    .eq("library_id", libraryId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error || !data) {
+    const err = new Error("Forbidden");
+    (err as Error & { status: number }).status = 403;
+    throw err;
+  }
+}

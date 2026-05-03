@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { assertLibraryOperator } from "@/lib/authz";
+import { FIXED_INTAKE_SHOTS } from "@/lib/intakePhotoChecklist";
 import { createClient } from "@/lib/supabase/server";
 
 export async function POST(request: Request) {
@@ -40,7 +42,62 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true });
   }
 
-  // return (not wired yet)
-  return NextResponse.json({ error: "not_implemented" }, { status: 400 });
+  if (body.session_type === "return") {
+    if (!body.return_session_id) return NextResponse.json({ error: "return_session_id required" }, { status: 400 });
+
+    const { data: s } = await supabase
+      .from("return_inspection_sessions")
+      .select("id,member_user_id,library_id,status")
+      .eq("id", body.return_session_id)
+      .maybeSingle();
+    if (!s) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    const memberShotKeys = new Set(FIXED_INTAKE_SHOTS.map((x) => x.shot_key));
+    const isMember = s.member_user_id === user.id;
+    const isMemberReturnShot = memberShotKeys.has(body.shot_key);
+
+    if (isMember && isMemberReturnShot) {
+      if (s.status !== "draft") {
+        return NextResponse.json({ error: "session_not_editable" }, { status: 400 });
+      }
+      const { error } = await supabase.from("session_photos").insert({
+        session_type: "return",
+        return_session_id: body.return_session_id,
+        shot_key: body.shot_key,
+        url: body.url,
+      });
+      if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+      return NextResponse.json({ ok: true });
+    }
+
+    if (body.shot_key === "operator_addendum") {
+      try {
+        await assertLibraryOperator(supabase, user.id, s.library_id);
+      } catch {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+      if (s.status !== "submitted") {
+        return NextResponse.json({ error: "session_not_ready_for_operator_photo" }, { status: 400 });
+      }
+      await supabase
+        .from("session_photos")
+        .delete()
+        .eq("session_type", "return")
+        .eq("return_session_id", body.return_session_id)
+        .eq("shot_key", "operator_addendum");
+      const { error } = await supabase.from("session_photos").insert({
+        session_type: "return",
+        return_session_id: body.return_session_id,
+        shot_key: body.shot_key,
+        url: body.url,
+      });
+      if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+      return NextResponse.json({ ok: true });
+    }
+
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  return NextResponse.json({ error: "invalid session_type" }, { status: 400 });
 }
 

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { FIXED_INTAKE_SHOTS } from "@/lib/intakePhotoChecklist";
 import { createClient } from "@/lib/supabase/server";
 
 export async function POST(request: Request) {
@@ -21,32 +22,12 @@ export async function POST(request: Request) {
     .maybeSingle();
   if (!lib?.id) return NextResponse.json({ error: "no_library" }, { status: 400 });
 
-  const { data: recipe } = await supabase
-    .from("photo_recipes")
-    .select("id,mode,category,version,title,description")
-    .eq("scope", "global")
-    .eq("mode", "intake")
-    .eq("category", body.category)
-    .eq("is_active", true)
-    .order("version", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (!recipe) return NextResponse.json({ error: "recipe_not_found" }, { status: 404 });
-
-  const { data: shots, error: shotsErr } = await supabase
-    .from("photo_recipe_shots")
-    .select("shot_key,label,instructions,framing,required,min_photos,max_photos,sort_order")
-    .eq("recipe_id", recipe.id)
-    .order("sort_order", { ascending: true });
-  if (shotsErr) return NextResponse.json({ error: shotsErr.message }, { status: 400 });
-
   const { data: session, error: sessionErr } = await supabase
     .from("catalog_intake_sessions")
     .insert({
       library_id: lib.id,
       operator_user_id: user.id,
-      recipe_id: recipe.id,
+      toy_category: body.category.trim(),
       status: "draft",
     })
     .select("id")
@@ -56,6 +37,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: sessionErr?.message ?? "Failed to create session" }, { status: 400 });
   }
 
-  return NextResponse.json({ sessionId: session.id, libraryId: lib.id, recipe, shots: shots ?? [] });
+  return NextResponse.json({
+    sessionId: session.id,
+    libraryId: lib.id,
+    toyCategory: body.category.trim(),
+    shots: FIXED_INTAKE_SHOTS,
+  });
 }
 

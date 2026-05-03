@@ -120,6 +120,10 @@ export async function POST(request: Request) {
   const urls = (photos ?? []).map((p) => p.url).filter(Boolean);
   const imageUrl = urls[0] ?? null;
 
+  const conditionScoreRaw = asInt(merged.condition_score);
+  const condition_score =
+    conditionScoreRaw != null && conditionScoreRaw >= 0 && conditionScoreRaw <= 100 ? conditionScoreRaw : null;
+
   const insertPayload = {
     library_id: session.library_id,
     name,
@@ -130,6 +134,7 @@ export async function POST(request: Request) {
     age_max: asInt(merged.age_max),
     piece_count: asInt(merged.piece_count),
     condition: pickCondition(merged.condition),
+    condition_score,
     tags: asStringArray(merged.tags),
     skills: asStringArray(merged.skills),
     internal_ref: asString(merged.internal_ref),
