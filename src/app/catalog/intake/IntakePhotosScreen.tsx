@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { PhotoSourcePicker } from "@/components/PhotoSourcePicker";
 import { CATALOG_TOY_PHOTOS_BUCKET } from "@/lib/catalogStorage";
 import { createClient } from "@/lib/supabase/client";
 import { FIXED_INTAKE_SHOTS, intakeChecklistCopy, type IntakeShot } from "@/lib/intakePhotoChecklist";
@@ -26,8 +27,6 @@ export function IntakePhotosScreen() {
   const [libraryId, setLibraryId] = useState<string | null>(null);
   const [uploadingShot, setUploadingShot] = useState<string | null>(null);
   const [uploadedCountByShot, setUploadedCountByShot] = useState<Record<string, number>>({});
-
-  const fileInputByShot = useRef<Record<string, HTMLInputElement | null>>({});
 
   useEffect(() => {
     const label = INTAKE_CATEGORIES.find((c) => c.id === category)?.label ?? category;
@@ -246,29 +245,11 @@ export function IntakePhotosScreen() {
                   </p>
 
                   <div className="mt-3 flex flex-wrap items-center gap-3">
-                    <input
-                      ref={(el) => {
-                        fileInputByShot.current[s.shot_key] = el;
-                      }}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        if (!f) return;
-                        void uploadShot(s.shot_key, f);
-                        e.currentTarget.value = "";
-                      }}
+                    <PhotoSourcePicker
+                      onFile={(file) => void uploadShot(s.shot_key, file)}
                       disabled={!sessionId || uploadingShot === s.shot_key}
+                      uploading={uploadingShot === s.shot_key}
                     />
-                    <button
-                      type="button"
-                      className="btn-secondary"
-                      disabled={!sessionId || uploadingShot === s.shot_key}
-                      onClick={() => fileInputByShot.current[s.shot_key]?.click()}
-                    >
-                      {uploadingShot === s.shot_key ? "Uploading…" : "Add photo"}
-                    </button>
                     <span className="text-xs font-semibold text-forest-700/75">Uploaded: {uploadedCountByShot[s.shot_key] ?? 0}</span>
                   </div>
                 </li>

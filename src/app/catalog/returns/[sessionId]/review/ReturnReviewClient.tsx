@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { PhotoSourcePicker } from "@/components/PhotoSourcePicker";
 import { CATALOG_TOY_PHOTOS_BUCKET } from "@/lib/catalogStorage";
 import { createClient } from "@/lib/supabase/client";
 
@@ -37,7 +38,6 @@ export function ReturnReviewClient({
   const [reports, setReports] = useState<ReportRow[]>(initialReports);
   const [operatorPhotoSigned, setOperatorPhotoSigned] = useState<string | null>(initialOperatorSigned);
   const [notes, setNotes] = useState("");
-  const opFileRef = useRef<HTMLInputElement | null>(null);
 
   async function runAnalyze(mode: "with_catalog" | "with_operator") {
     setError(null);
@@ -123,7 +123,6 @@ export function ReturnReviewClient({
       setError(e instanceof Error ? e.message : "Error");
     } finally {
       setBusy(null);
-      if (opFileRef.current) opFileRef.current.value = "";
     }
   }
 
@@ -215,20 +214,14 @@ export function ReturnReviewClient({
           <p className="text-sm font-semibold text-forest-900">Operator verification photo (optional)</p>
           <p className="mt-1 text-xs text-forest-700/85">One addendum image for unclear cases. Replaces any previous operator addendum.</p>
           <div className="mt-3 flex flex-wrap items-center gap-3">
-            <input
-              ref={opFileRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (!f) return;
-                void uploadOperatorPhoto(f);
-              }}
+            <PhotoSourcePicker
+              size="compact"
+              buttonLabel="Upload operator photo"
+              uploadingLabel="Uploading…"
+              onFile={(file) => void uploadOperatorPhoto(file)}
+              disabled={busy !== null}
+              uploading={busy === "upload_op"}
             />
-            <button type="button" className="btn-secondary text-sm" disabled={busy !== null} onClick={() => opFileRef.current?.click()}>
-              {busy === "upload_op" ? "Uploading…" : "Upload operator photo"}
-            </button>
             {operatorPhotoSigned ? (
               <span className="text-xs font-semibold text-forest-700">Ready</span>
             ) : (
