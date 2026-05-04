@@ -20,7 +20,7 @@ export async function POST(_request: Request, ctx: { params: Promise<{ id: strin
 
   const { data: s, error: sErr } = await supabase
     .from("return_inspection_sessions")
-    .select("id,member_user_id,status")
+    .select("id,member_user_id,status,item_id,library_id")
     .eq("id", sessionId)
     .maybeSingle();
 
@@ -54,5 +54,18 @@ export async function POST(_request: Request, ctx: { params: Promise<{ id: strin
     .eq("member_user_id", user.id);
 
   if (uErr) return NextResponse.json({ error: uErr.message }, { status: 400 });
+
+  const { error: loanErr } = await supabase
+    .from("loans")
+    .update({ status: "return_pending" })
+    .eq("library_id", s.library_id)
+    .eq("item_id", s.item_id)
+    .eq("member_user_id", user.id)
+    .in("status", ["active", "overdue"]);
+
+  if (loanErr) {
+    return NextResponse.json({ error: loanErr.message }, { status: 400 });
+  }
+
   return NextResponse.json({ ok: true });
 }

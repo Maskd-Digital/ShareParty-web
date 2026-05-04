@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { CATALOG_TOY_PHOTOS_BUCKET } from "@/lib/catalogStorage";
+import { CATALOG_TOY_PHOTOS_BUCKET, RETURN_PHOTOS_BUCKET } from "@/lib/catalogStorage";
 
 /**
  * Signed URL for a private catalog photo path (storage object key under `toy-photos`).
@@ -16,6 +16,24 @@ export async function signedCatalogPhotoUrl(
 
   const { data, error } = await supabase.storage
     .from(CATALOG_TOY_PHOTOS_BUCKET)
+    .createSignedUrl(path, expiresInSeconds);
+
+  if (error || !data?.signedUrl) return null;
+  return data.signedUrl;
+}
+
+/** Signed URL for return-session storage paths (default bucket `return-photos`, see `RETURN_PHOTOS_BUCKET`). */
+export async function signedReturnPhotoUrl(
+  supabase: SupabaseClient,
+  storagePath: string | null | undefined,
+  expiresInSeconds = 3600,
+): Promise<string | null> {
+  if (!storagePath?.trim()) return null;
+  const path = storagePath.trim();
+  if (path.startsWith("http://") || path.startsWith("https://")) return path;
+
+  const { data, error } = await supabase.storage
+    .from(RETURN_PHOTOS_BUCKET)
     .createSignedUrl(path, expiresInSeconds);
 
   if (error || !data?.signedUrl) return null;

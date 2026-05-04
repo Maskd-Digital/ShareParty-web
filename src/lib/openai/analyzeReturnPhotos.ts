@@ -1,4 +1,4 @@
-import { CATALOG_TOY_PHOTOS_BUCKET } from "@/lib/catalogStorage";
+import { CATALOG_TOY_PHOTOS_BUCKET, RETURN_PHOTOS_BUCKET } from "@/lib/catalogStorage";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import OpenAI from "openai";
 import type { ResponseInputMessageContentList } from "openai/resources/responses/responses";
@@ -46,11 +46,19 @@ const RETURN_JSON_SCHEMA = {
   ],
 } as const;
 
-const INSTRUCTIONS = `You compare return inspection photos of a borrowed toy to the library's catalog (intake) photos.
-Assess visible wear, missing parts, cleanliness, and any new damage vs what the catalog images suggest.
+const INSTRUCTIONS_USER_UPLOADS_VS_CATALOG = `The images labeled as user-uploaded returns are member-submitted return inspection photos (stored in the library's return-photos workflow).
+Compare those user-uploaded return shots to the library's catalog intake photo set for the same item.
+Assess visible wear, missing parts, cleanliness, and any new damage relative to the catalog intake references.
 condition_score 0–100 for returned state (0=very worn/damaged, 100=like new). condition_label must align (new≈85–100, good≈50–84, fair≈25–49, poor≈0–24).
-If the operator provided an extra verification photo, weight it alongside the member return photos.
-needs_manual_review true if you cannot judge confidently (blur, mismatching item, conflicting angles).`;
+needs_manual_review true if you cannot judge confidently (blur, mismatching item, conflicting angles).
+In compared_to_catalog, summarize how the user-uploaded return set lines up with the catalog intake references (field id is legacy).`;
+
+const INSTRUCTIONS_USER_UPLOADS_VS_SPOT = `The images labeled as user-uploaded returns are member-submitted return inspection photos from the return-photos workflow.
+The on-the-spot images are operator verification photos of the physical toy at return handling.
+Compare user-uploaded returns to the on-the-spot set: same item, plausible condition alignment, discrepancies, blur, or angle issues.
+condition_score 0–100 for returned state (0=very worn/damaged, 100=like new). condition_label must align (new≈85–100, good≈50–84, fair≈25–49, poor≈0–24).
+needs_manual_review true if you cannot judge confidently.
+Use compared_to_catalog to summarize user-uploaded returns vs on-the-spot verification (field id is legacy).`;
 
 export type AnalyzeReturnPhotosResult = {
   condition_score: number;
@@ -66,8 +74,9 @@ async function pushImageContent(
   content: ResponseInputMessageContentList,
   label: string,
   storagePath: string,
+  bucket: string,
 ) {
-  const { data: blob, error: dlErr } = await supabase.storage.from(CATALOG_TOY_PHOTOS_BUCKET).download(storagePath);
+  const { data: blob, error: dlErr } = await supabase.storage.from(bucket).download(storagePath);
   if (dlErr || !blob) {
     throw new Error(`Could not download ${label}: ${dlErr?.message ?? "unknown"}`);
   }
@@ -92,6 +101,8 @@ export async function analyzeReturnPhotos(
     returnPhotos: SessionPhotoRow[];
     catalogPaths: string[];
     operatorAddendumPath: string | null;
+    /** If true: user-uploaded return photos vs catalog intake. If false: user-uploaded returns vs on-the-spot operator photo only. */
+    compareToCatalog: boolean;
   },
 ): Promise<AnalyzeReturnPhotosResult> {
   const apiKey = process.env.OPENAI_API_KEY?.trim();
@@ -100,30 +111,48 @@ export async function analyzeReturnPhotos(
   const model = process.env.OPENAI_RETURN_MODEL?.trim() || process.env.OPENAI_INTAKE_MODEL?.trim() || "gpt-4o";
   const openai = new OpenAI({ apiKey });
 
+  const instructions = opts.compareToCatalog ? INSTRUCTIONS_USER_UPLOADS_VS_CATALOG : INSTRUCTIONS_USER_UPLOADS_VS_SPOT;
+  const catalogCount = opts.compareToCatalog ? opts.catalogPaths.length : 0;
   const content: ResponseInputMessageContentList = [
     {
       type: "input_text",
-      text: `Member return photos (shot_key order): ${opts.returnPhotos.map((p) => p.shot_key).join(", ")}.\nCatalog reference paths: ${opts.catalogPaths.length} images.\nOperator addendum: ${opts.operatorAddendumPath ? "yes" : "no"}.`,
+      text: opts.compareToCatalog
+        ? `User-uploaded return photos (shot_key order): ${opts.returnPhotos.map((p) => p.shot_key).join(", ")}.\nCatalog intake reference images: ${catalogCount}.`
+        : `User-uploaded return photos (shot_key order): ${opts.returnPhotos.map((p) => p.shot_key).join(", ")}.\nOn-the-spot operator verification images: ${opts.operatorAddendumPath ? "yes" : "no"}.`,
     },
   ];
 
   for (const row of opts.returnPhotos) {
-    await pushImageContent(supabase, content, `Return photo (${row.shot_key})`, row.url);
+    await pushImageContent(
+      supabase,
+      content,
+      `User-uploaded return (${row.shot_key})`,
+      row.url,
+      RETURN_PHOTOS_BUCKET,
+    );
   }
 
-  let catIdx = 0;
-  for (const path of opts.catalogPaths) {
-    catIdx += 1;
-    await pushImageContent(supabase, content, `Catalog reference ${catIdx}`, path);
+  if (opts.compareToCatalog) {
+    let catIdx = 0;
+    for (const path of opts.catalogPaths) {
+      catIdx += 1;
+      await pushImageContent(supabase, content, `Catalog intake reference ${catIdx}`, path, CATALOG_TOY_PHOTOS_BUCKET);
+    }
   }
 
   if (opts.operatorAddendumPath) {
-    await pushImageContent(supabase, content, "Operator verification photo", opts.operatorAddendumPath);
+    await pushImageContent(
+      supabase,
+      content,
+      opts.compareToCatalog ? "Operator addendum (optional)" : "On-the-spot operator verification",
+      opts.operatorAddendumPath,
+      RETURN_PHOTOS_BUCKET,
+    );
   }
 
   const response = await openai.responses.create({
     model,
-    instructions: INSTRUCTIONS,
+    instructions,
     input: [
       {
         type: "message",

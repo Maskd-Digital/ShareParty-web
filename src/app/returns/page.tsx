@@ -3,7 +3,13 @@ import { redirect } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
 import { createClient } from "@/lib/supabase/server";
 
-type LoanRow = { id: string; item_id: string; due_date: string; library_id: string };
+type LoanRow = {
+  id: string;
+  item_id: string;
+  due_date: string;
+  library_id: string;
+  status: string;
+};
 
 export default async function MyReturnsPage({ searchParams }: { searchParams: Promise<{ err?: string }> }) {
   const { err } = await searchParams;
@@ -16,9 +22,9 @@ export default async function MyReturnsPage({ searchParams }: { searchParams: Pr
 
   const { data: loans } = await supabase
     .from("loans")
-    .select("id,item_id,due_date,library_id")
+    .select("id,item_id,due_date,library_id,status")
     .eq("member_user_id", user.id)
-    .in("status", ["active", "overdue"])
+    .in("status", ["active", "overdue", "return_pending"])
     .order("due_date", { ascending: true });
 
   const loanRows = (loans ?? []) as LoanRow[];
@@ -55,16 +61,29 @@ export default async function MyReturnsPage({ searchParams }: { searchParams: Pr
               >
                 <div>
                   <p className="font-semibold text-forest-900">{names.get(l.item_id) ?? "Toy"}</p>
-                  <p className="mt-1 text-xs text-forest-700/80">Due {new Date(l.due_date).toLocaleDateString()}</p>
+                  <p className="mt-1 text-xs text-forest-700/80">
+                    {l.status === "return_pending" ? (
+                      <span className="font-medium text-forest-800">Return photos submitted — awaiting library review</span>
+                    ) : (
+                      <>Due {new Date(l.due_date).toLocaleDateString()}</>
+                    )}
+                  </p>
                 </div>
-                <StartReturnButton itemId={l.item_id} />
+                {l.status === "return_pending" ? (
+                  <span className="text-xs font-semibold text-forest-600/90">No action needed</span>
+                ) : (
+                  <StartReturnButton itemId={l.item_id} />
+                )}
               </li>
             ))}
           </ul>
         )}
 
         <p className="mt-10 text-sm text-forest-700/80">
-          <Link href="/dashboard" className="font-semibold text-forest-800 underline decoration-forest-600/30 underline-offset-2">
+          <Link
+            href="/dashboard"
+            className="font-semibold text-forest-800 underline decoration-forest-600/30 underline-offset-2"
+          >
             Back to dashboard
           </Link>
         </p>

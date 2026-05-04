@@ -62,7 +62,7 @@ export default async function DashboardPage() {
         .from("loans")
         .select("*", { count: "exact", head: true })
         .eq("library_id", activeLibrary.id)
-        .in("status", ["active", "overdue"]),
+        .in("status", ["active", "overdue", "return_pending", "reserved"]),
       supabase
         .from("loan_requests")
         .select("*", { count: "exact", head: true })

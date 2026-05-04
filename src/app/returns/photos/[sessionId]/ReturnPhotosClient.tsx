@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PhotoSourcePicker } from "@/components/PhotoSourcePicker";
-import { CATALOG_TOY_PHOTOS_BUCKET } from "@/lib/catalogStorage";
+import { RETURN_PHOTOS_BUCKET } from "@/lib/catalogStorage";
 import { createClient } from "@/lib/supabase/client";
 import { FIXED_INTAKE_SHOTS, intakeChecklistCopy, type IntakeShot } from "@/lib/intakePhotoChecklist";
 import { INTAKE_CATEGORIES, type CategoryId } from "@/app/catalog/intake/formShared";
@@ -47,9 +47,9 @@ export function ReturnPhotosClient({
       const supabase = createClient();
       const ext = file.name.includes(".") ? file.name.split(".").pop() : "jpg";
       const id = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : String(Date.now());
-      const path = `${libraryId}/return/${sessionId}/${shotKey}/${id}.${ext}`;
+      const path = `${libraryId}/returns/${sessionId}/${shotKey}/${id}.${ext}`;
 
-      const { error: upErr } = await supabase.storage.from(CATALOG_TOY_PHOTOS_BUCKET).upload(path, file, {
+      const { error: upErr } = await supabase.storage.from(RETURN_PHOTOS_BUCKET).upload(path, file, {
         cacheControl: "3600",
         upsert: false,
         contentType: file.type || undefined,
@@ -160,7 +160,7 @@ export function ReturnPhotosClient({
         </div>
 
         <p className="mt-6 text-xs text-forest-700/70">
-          Stored in <code className="font-mono text-[11px]">{CATALOG_TOY_PHOTOS_BUCKET}</code>.
+          Stored in <code className="font-mono text-[11px]">{RETURN_PHOTOS_BUCKET}</code>.
         </p>
       </div>
     </div>

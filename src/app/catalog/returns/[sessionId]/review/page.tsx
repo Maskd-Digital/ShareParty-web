@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
 import { assertLibraryOperator } from "@/lib/authz";
-import { signedCatalogPhotoUrl } from "@/lib/catalogItemImage";
+import { signedCatalogPhotoUrl, signedReturnPhotoUrl } from "@/lib/catalogItemImage";
+import { RETURN_PHOTOS_BUCKET } from "@/lib/catalogStorage";
 import { createClient } from "@/lib/supabase/server";
 import { ReturnReviewClient } from "./ReturnReviewClient";
 
@@ -56,11 +57,11 @@ export default async function ReturnReviewPage({ params }: { params: Promise<{ s
   const memberPhotos = await Promise.all(
     memberRows.map(async (r) => ({
       shot_key: r.shot_key,
-      signedUrl: await signedCatalogPhotoUrl(supabase, r.url),
+      signedUrl: await signedReturnPhotoUrl(supabase, r.url),
     })),
   );
 
-  const operatorPhotoSigned = operatorRow?.url ? await signedCatalogPhotoUrl(supabase, operatorRow.url) : null;
+  const operatorPhotoSigned = operatorRow?.url ? await signedReturnPhotoUrl(supabase, operatorRow.url) : null;
 
   const catalogPaths: string[] = [];
   const pushPath = (p: string | null | undefined) => {
@@ -101,7 +102,11 @@ export default async function ReturnReviewPage({ params }: { params: Promise<{ s
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-forest-700/80">Return review</p>
             <h1 className="text-2xl font-bold text-forest-900">{item.name}</h1>
-            <p className="mt-1 text-sm text-forest-800/85">Member-submitted return photos are below. Run AI against catalog originals, optionally add your own verification shot, then close the return.</p>
+            <p className="mt-1 text-sm text-forest-800/85">
+              Member return shots are loaded from the return photos bucket (<span className="font-mono text-xs">{RETURN_PHOTOS_BUCKET}</span>).
+              Run AI either against those user uploads plus catalog intake references, or against a fresh on-the-spot verification
+              capture, then close the return.
+            </p>
           </div>
           <Link href="/catalog" className="text-sm font-semibold text-forest-700 underline decoration-forest-600/30 underline-offset-2">
             Back to catalog
@@ -112,6 +117,7 @@ export default async function ReturnReviewPage({ params }: { params: Promise<{ s
           sessionId={sessionId}
           libraryId={session.library_id}
           itemName={item.name}
+          returnPhotosBucket={RETURN_PHOTOS_BUCKET}
           memberPhotos={memberPhotos}
           operatorPhotoSigned={operatorPhotoSigned}
           catalogPhotosSigned={catalogPhotosSigned}

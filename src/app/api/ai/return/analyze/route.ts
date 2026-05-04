@@ -8,9 +8,9 @@ export const dynamic = "force-dynamic";
 
 /**
  * POST /api/ai/return/analyze
- * body: { return_session_id, mode?: "with_catalog" | "with_operator" }
- * - with_catalog: member return photos + catalog intake images only
- * - with_operator: same + operator_addendum if present (400 if missing)
+ * body: { return_session_id, mode?: "with_user_uploads" | "with_spot" | "with_catalog" | "with_operator" }
+ * - with_user_uploads (default; alias with_catalog): user-uploaded return photos (return bucket) vs catalog intake
+ * - with_spot (alias with_operator): user-uploaded returns vs operator on-the-spot photo only (operator_addendum required)
  */
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -29,7 +29,11 @@ export async function POST(request: Request) {
   const sessionId = body.return_session_id?.trim();
   if (!sessionId) return NextResponse.json({ error: "return_session_id required" }, { status: 400 });
 
-  const mode = body.mode === "with_operator" ? "with_operator" : "with_catalog";
+  const rawMode = body.mode?.trim();
+  const mode =
+    rawMode === "with_spot" || rawMode === "with_operator"
+      ? "with_spot"
+      : "with_user_uploads"; /* default + legacy with_catalog */
 
   const { data: s, error: sErr } = await supabase
     .from("return_inspection_sessions")
@@ -86,14 +90,14 @@ export async function POST(request: Request) {
     for (const u of arr) pushPath(typeof u === "string" ? u : null);
   }
 
-  if (catalogPaths.length === 0) {
+  if (mode === "with_user_uploads" && catalogPaths.length === 0) {
     return NextResponse.json({ error: "no_catalog_photos" }, { status: 400 });
   }
 
   let operatorAddendumPath: string | null = null;
-  if (mode === "with_operator") {
+  if (mode === "with_spot") {
     if (!operatorRow?.url) {
-      return NextResponse.json({ error: "operator_addendum_required" }, { status: 400 });
+      return NextResponse.json({ error: "operator_spot_photo_required" }, { status: 400 });
     }
     operatorAddendumPath = operatorRow.url;
   }
@@ -101,8 +105,9 @@ export async function POST(request: Request) {
   try {
     const analysis = await analyzeReturnPhotos(supabase, {
       returnPhotos: returnRows.map((r) => ({ shot_key: r.shot_key, url: r.url })),
-      catalogPaths,
+      catalogPaths: mode === "with_user_uploads" ? catalogPaths : [],
       operatorAddendumPath,
+      compareToCatalog: mode === "with_user_uploads",
     });
 
     const findings = {

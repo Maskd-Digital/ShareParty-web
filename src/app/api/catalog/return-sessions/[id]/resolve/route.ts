@@ -86,7 +86,7 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
       .eq("library_id", s.library_id)
       .eq("item_id", s.item_id)
       .eq("member_user_id", s.member_user_id)
-      .in("status", ["active", "overdue"]);
+      .in("status", ["active", "overdue", "return_pending"]);
   } catch {
     /* loan row may be missing in dev; session + item already updated */
   }

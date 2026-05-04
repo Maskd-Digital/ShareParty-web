@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { PhotoSourcePicker } from "@/components/PhotoSourcePicker";
-import { CATALOG_TOY_PHOTOS_BUCKET } from "@/lib/catalogStorage";
+import { RETURN_PHOTOS_BUCKET } from "@/lib/catalogStorage";
 import { createClient } from "@/lib/supabase/client";
 
 type ReportRow = {
@@ -19,6 +19,7 @@ export function ReturnReviewClient({
   sessionId,
   libraryId,
   itemName,
+  returnPhotosBucket,
   memberPhotos,
   operatorPhotoSigned: initialOperatorSigned,
   catalogPhotosSigned,
@@ -27,6 +28,7 @@ export function ReturnReviewClient({
   sessionId: string;
   libraryId: string;
   itemName: string;
+  returnPhotosBucket: string;
   memberPhotos: { shot_key: string; signedUrl: string | null }[];
   operatorPhotoSigned: string | null;
   catalogPhotosSigned: string[];
@@ -39,7 +41,7 @@ export function ReturnReviewClient({
   const [operatorPhotoSigned, setOperatorPhotoSigned] = useState<string | null>(initialOperatorSigned);
   const [notes, setNotes] = useState("");
 
-  async function runAnalyze(mode: "with_catalog" | "with_operator") {
+  async function runAnalyze(mode: "with_user_uploads" | "with_spot") {
     setError(null);
     setBusy(mode);
     try {
@@ -91,9 +93,9 @@ export function ReturnReviewClient({
       const supabase = createClient();
       const ext = file.name.includes(".") ? file.name.split(".").pop() : "jpg";
       const id = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : String(Date.now());
-      const path = `${libraryId}/return/${sessionId}/operator_addendum/${id}.${ext}`;
+      const path = `${libraryId}/returns/${sessionId}/operator_addendum/${id}.${ext}`;
 
-      const { error: upErr } = await supabase.storage.from(CATALOG_TOY_PHOTOS_BUCKET).upload(path, file, {
+      const { error: upErr } = await supabase.storage.from(RETURN_PHOTOS_BUCKET).upload(path, file, {
         cacheControl: "3600",
         upsert: false,
         contentType: file.type || undefined,
@@ -114,7 +116,7 @@ export function ReturnReviewClient({
       if (!res.ok) throw new Error(j.error ?? "Failed to record operator photo");
 
       const { data: signed, error: signErr } = await supabase.storage
-        .from(CATALOG_TOY_PHOTOS_BUCKET)
+        .from(RETURN_PHOTOS_BUCKET)
         .createSignedUrl(path, 3600);
       if (signErr || !signed?.signedUrl) throw new Error(signErr?.message ?? "Could not sign URL");
       setOperatorPhotoSigned(signed.signedUrl);
@@ -151,7 +153,11 @@ export function ReturnReviewClient({
       {error ? <p className="text-sm font-medium text-red-700">{error}</p> : null}
 
       <section className="rounded-2xl border border-cream-300/80 bg-cream-50/90 p-6 shadow-card">
-        <h2 className="text-lg font-semibold text-forest-900">Member return photos</h2>
+        <h2 className="text-lg font-semibold text-forest-900">User-uploaded return photos</h2>
+        <p className="mt-1 text-xs text-forest-700/85">
+          Fetched from the return photos bucket <span className="font-mono text-[11px]">{returnPhotosBucket}</span> (signed URLs
+          for this session).
+        </p>
         <ul className="mt-4 grid gap-4 sm:grid-cols-3">
           {memberPhotos.map((p) => (
             <li key={p.shot_key} className="overflow-hidden rounded-xl border border-cream-300/70 bg-white/90">
@@ -170,14 +176,17 @@ export function ReturnReviewClient({
       </section>
 
       <section className="rounded-2xl border border-cream-300/80 bg-cream-50/90 p-6 shadow-card">
-        <h2 className="text-lg font-semibold text-forest-900">Catalog originals</h2>
-        <p className="mt-1 text-xs text-forest-700/85">Used by AI and for your visual comparison.</p>
+        <h2 className="text-lg font-semibold text-forest-900">Library catalog (intake)</h2>
+        <p className="mt-1 text-xs text-forest-700/85">
+          Library intake photos (catalog storage). For your visual reference; the first AI option contrasts{" "}
+          <span className="font-semibold">user-uploaded returns</span> from the return bucket with this intake set.
+        </p>
         <ul className="mt-4 grid gap-4 sm:grid-cols-3">
           {catalogPhotosSigned.map((url, i) => (
             <li key={`${url}-${i}`} className="overflow-hidden rounded-xl border border-cream-300/70 bg-white/90">
               <div className="aspect-[4/3] w-full bg-cream-200/80">
                 {/* eslint-disable-next-line @next/next/no-img-element -- signed URL */}
-                <img src={url} alt={`Catalog ${i + 1}`} className="h-full w-full object-cover" />
+                <img src={url} alt={`Intake reference ${i + 1}`} className="h-full w-full object-cover" />
               </div>
             </li>
           ))}
@@ -187,36 +196,41 @@ export function ReturnReviewClient({
       <section className="rounded-2xl border border-cream-300/80 bg-cream-50/90 p-6 shadow-card">
         <h2 className="text-lg font-semibold text-forest-900">AI analysis</h2>
         <p className="mt-1 text-sm text-forest-800/85">
-          Compare return shots to <span className="font-semibold">{itemName}</span> catalog images. Add an optional operator
-          photo, then run analysis including it.
+          Both paths use the <span className="font-semibold">user-uploaded return photos</span> above (from{" "}
+          <span className="font-mono text-xs">{returnPhotosBucket}</span>). Choose whether to contrast them with{" "}
+          <span className="font-semibold">{itemName}</span> catalog intake references, or with a new on-the-spot verification
+          image you add below.
         </p>
         <div className="mt-4 flex flex-wrap gap-3">
           <button
             type="button"
             className="btn-secondary"
             disabled={busy !== null}
-            onClick={() => void runAnalyze("with_catalog")}
+            onClick={() => void runAnalyze("with_user_uploads")}
           >
-            {busy === "with_catalog" ? "Analyzing…" : "Analyze with originals"}
+            {busy === "with_user_uploads" ? "Analyzing…" : "Compare with user-uploaded returns"}
           </button>
           <button
             type="button"
             className="btn-secondary"
             disabled={busy !== null || !operatorPhotoSigned}
-            onClick={() => void runAnalyze("with_operator")}
-            title={!operatorPhotoSigned ? "Upload an operator verification photo first" : undefined}
+            onClick={() => void runAnalyze("with_spot")}
+            title={!operatorPhotoSigned ? "Add an on-the-spot verification photo first" : undefined}
           >
-            {busy === "with_operator" ? "Analyzing…" : "Analyze with operator photo"}
+            {busy === "with_spot" ? "Analyzing…" : "Compare with on-the-spot"}
           </button>
         </div>
 
         <div className="mt-6 rounded-xl border border-cream-300/70 bg-cream-100/50 p-4">
-          <p className="text-sm font-semibold text-forest-900">Operator verification photo (optional)</p>
-          <p className="mt-1 text-xs text-forest-700/85">One addendum image for unclear cases. Replaces any previous operator addendum.</p>
+          <p className="text-sm font-semibold text-forest-900">On-the-spot verification</p>
+          <p className="mt-1 text-xs text-forest-700/85">
+            Required only for the on-the-spot comparison. Stored in the same return photos bucket. One image; replaces any
+            previous on-the-spot shot.
+          </p>
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <PhotoSourcePicker
               size="compact"
-              buttonLabel="Upload operator photo"
+              buttonLabel="Take or upload on-the-spot photo"
               uploadingLabel="Uploading…"
               onFile={(file) => void uploadOperatorPhoto(file)}
               disabled={busy !== null}
@@ -262,7 +276,9 @@ export function ReturnReviewClient({
                   </ul>
                 ) : null}
                 {typeof r.findings.compared_to_catalog === "string" ? (
-                  <p className="mt-2 text-xs text-forest-700/90">{r.findings.compared_to_catalog}</p>
+                  <p className="mt-2 text-xs text-forest-700/90">
+                    <span className="font-semibold text-forest-800">Comparison notes:</span> {r.findings.compared_to_catalog}
+                  </p>
                 ) : null}
               </li>
             ))}
