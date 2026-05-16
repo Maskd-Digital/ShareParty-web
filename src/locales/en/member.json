@@ -1,0 +1,16 @@
+{
+  "onboardingTitle": "Member setup",
+  "stepProfile": "Your details",
+  "stepChildren": "Children",
+  "stepJoin": "Join a library",
+  "libraryIdLabel": "Library ID",
+  "libraryIdHelp": "Ask your library operator for this ID.",
+  "lookupLibrary": "Look up library",
+  "membershipFee": "Membership fee",
+  "submitRequest": "Request to join",
+  "pendingApproval": "Waiting for operator approval",
+  "pendingApprovalPaid": "After approval you will complete payment to join.",
+  "payAndJoin": "Pay and join",
+  "paymentRequired": "Payment required",
+  "browseCatalog": "Browse catalog"
+}

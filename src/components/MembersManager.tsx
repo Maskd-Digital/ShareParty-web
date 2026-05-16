@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { OperatorPendingRequests } from "@/components/OperatorPendingRequests";
 
 type Member = {
   user_id: string;
@@ -114,6 +115,8 @@ export function MembersManager({ libraryId, libraryName }: { libraryId: string; 
           onChange={(e) => setQ(e.target.value)}
         />
       </section>
+
+      <OperatorPendingRequests libraryId={libraryId} onChanged={() => void load()} />
 
       <section className="rounded-2xl border border-cream-300/80 bg-cream-100/40 p-5 shadow-sm">
         <p className="text-sm font-semibold text-forest-900">Onboard existing member</p>

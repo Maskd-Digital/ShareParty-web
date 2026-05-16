@@ -1,6 +1,5 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
-import { AppShell } from "@/components/AppShell";
+import { MemberPageShell } from "@/components/MemberSidebar";
 import { createClient } from "@/lib/supabase/server";
 
 type LoanRow = {
@@ -20,6 +19,9 @@ export default async function MyReturnsPage({ searchParams }: { searchParams: Pr
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
+  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
+  if (profile?.role === "operator") redirect("/dashboard");
+
   const { data: loans } = await supabase
     .from("loans")
     .select("id,item_id,due_date,library_id,status")
@@ -36,28 +38,30 @@ export default async function MyReturnsPage({ searchParams }: { searchParams: Pr
   }
 
   return (
-    <AppShell>
-      <div className="mx-auto w-full max-w-2xl px-4 py-10">
-        <h1 className="text-2xl font-bold text-forest-900">My borrows</h1>
-        <p className="mt-2 text-sm text-forest-800/85">
-          When you are ready to return a toy, start a return inspection and upload the three required photos for the library
-          operator.
-        </p>
+    <MemberPageShell active="returns">
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-forest-900">My borrows</h1>
+          <p className="mt-2 text-sm text-forest-800/85">
+            When you are ready to return a toy, start a return inspection and upload the three required photos for the
+            library operator.
+          </p>
+        </div>
 
         {err ? (
-          <p className="mt-4 rounded-lg border border-red-200 bg-red-50/90 px-3 py-2 text-sm text-red-800">
+          <p className="rounded-lg border border-red-200 bg-red-50/90 px-3 py-2 text-sm text-red-800">
             {err.replace(/_/g, " ")}
           </p>
         ) : null}
 
         {loanRows.length === 0 ? (
-          <p className="mt-8 text-sm text-forest-700/85">You have no active loans.</p>
+          <p className="text-sm text-forest-700/85">You have no active loans.</p>
         ) : (
-          <ul className="mt-8 space-y-3">
+          <ul className="space-y-3">
             {loanRows.map((l) => (
               <li
                 key={l.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-cream-300/80 bg-cream-50/90 p-4 shadow-sm"
+                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-cream-300/80 bg-white/95 p-4 shadow-sm"
               >
                 <div>
                   <p className="font-semibold text-forest-900">{names.get(l.item_id) ?? "Toy"}</p>
@@ -78,17 +82,8 @@ export default async function MyReturnsPage({ searchParams }: { searchParams: Pr
             ))}
           </ul>
         )}
-
-        <p className="mt-10 text-sm text-forest-700/80">
-          <Link
-            href="/dashboard"
-            className="font-semibold text-forest-800 underline decoration-forest-600/30 underline-offset-2"
-          >
-            Back to dashboard
-          </Link>
-        </p>
       </div>
-    </AppShell>
+    </MemberPageShell>
   );
 }
 

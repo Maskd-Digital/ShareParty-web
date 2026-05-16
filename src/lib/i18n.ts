@@ -4,6 +4,7 @@ import common from "@/locales/en/common.json";
 import auth from "@/locales/en/auth.json";
 import onboarding from "@/locales/en/onboarding.json";
 import legal from "@/locales/en/legal.json";
+import member from "@/locales/en/member.json";
 
 if (!i18n.isInitialized) {
   void i18n.use(initReactI18next).init({
@@ -15,6 +16,7 @@ if (!i18n.isInitialized) {
       auth,
       onboarding,
       legal,
+      member,
     },
   },
   defaultNS: "common",

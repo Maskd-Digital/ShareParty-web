@@ -21,7 +21,7 @@ export async function POST(_request: Request, ctx: { params: Promise<{ id: strin
 
   const { data: lib, error: fetchErr } = await supabase
     .from("libraries")
-    .select("requires_paid_membership, stripe_account_id")
+    .select("requires_paid_membership, stripe_account_id, membership_fee_amount")
     .eq("id", libraryId)
     .single();
 
@@ -31,6 +31,10 @@ export async function POST(_request: Request, ctx: { params: Promise<{ id: strin
 
   if (lib.requires_paid_membership && !lib.stripe_account_id) {
     return NextResponse.json({ error: "Stripe account onboarding required" }, { status: 400 });
+  }
+
+  if (lib.requires_paid_membership && (!lib.membership_fee_amount || lib.membership_fee_amount <= 0)) {
+    return NextResponse.json({ error: "Membership fee must be set for paid libraries" }, { status: 400 });
   }
 
   return NextResponse.json({ ok: true });

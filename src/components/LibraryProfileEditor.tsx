@@ -14,6 +14,8 @@ export type LibraryProfile = {
   street_address: string | null;
   suburb: string | null;
   requires_paid_membership: boolean;
+  membership_fee_amount: number;
+  membership_fee_currency: string;
   is_setls_member: boolean;
   max_items_per_member: number;
   loan_period_days: number;
@@ -38,6 +40,8 @@ export function LibraryProfileEditor({ initial }: { initial: LibraryProfile }) {
     street_address: initial.street_address ?? "",
     suburb: initial.suburb ?? "",
     requires_paid_membership: Boolean(initial.requires_paid_membership),
+    membership_fee_amount: initial.membership_fee_amount ?? 0,
+    membership_fee_currency: initial.membership_fee_currency ?? "NZD",
     is_setls_member: Boolean(initial.is_setls_member),
     max_items_per_member: Number.isFinite(initial.max_items_per_member) ? initial.max_items_per_member : 3,
     loan_period_days: Number.isFinite(initial.loan_period_days) ? initial.loan_period_days : 14,
@@ -58,6 +62,12 @@ export function LibraryProfileEditor({ initial }: { initial: LibraryProfile }) {
         ["Suburb", initial.suburb ?? "—"],
         ["Description", initial.description ?? "—"],
         ["Requires paid membership", initial.requires_paid_membership ? "Yes" : "No"],
+        [
+          "Membership fee",
+          initial.requires_paid_membership
+            ? `${(initial.membership_fee_amount / 100).toFixed(2)} ${initial.membership_fee_currency}`
+            : "—",
+        ],
         ["SETLS member", initial.is_setls_member ? "Yes" : "No"],
         ["Max items per member", String(initial.max_items_per_member)],
         ["Loan period (days)", String(initial.loan_period_days)],
@@ -86,6 +96,8 @@ export function LibraryProfileEditor({ initial }: { initial: LibraryProfile }) {
           street_address: draft.street_address || null,
           suburb: draft.suburb || null,
           requires_paid_membership: draft.requires_paid_membership,
+          membership_fee_amount: Math.round(Number(draft.membership_fee_amount) || 0),
+          membership_fee_currency: draft.membership_fee_currency.trim() || "NZD",
           is_setls_member: draft.is_setls_member,
           max_items_per_member: draft.max_items_per_member,
           loan_period_days: draft.loan_period_days,
@@ -170,6 +182,22 @@ export function LibraryProfileEditor({ initial }: { initial: LibraryProfile }) {
             />
             <span>Requires paid membership</span>
           </label>
+
+          {draft.requires_paid_membership ? (
+            <>
+              <NumberField
+                label="Membership fee (cents)"
+                value={draft.membership_fee_amount}
+                min={1}
+                onChange={(v) => setDraft((d) => ({ ...d, membership_fee_amount: v }))}
+              />
+              <Field
+                label="Fee currency"
+                value={draft.membership_fee_currency}
+                onChange={(v) => setDraft((d) => ({ ...d, membership_fee_currency: v }))}
+              />
+            </>
+          ) : null}
 
           <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-cream-300/90 bg-cream-100/50 p-3 text-sm text-forest-900">
             <input

@@ -20,7 +20,7 @@ export default async function LibrarySettingsPage() {
   const { data: libs } = await supabase
     .from("libraries")
     .select(
-      "id,library_name,country,city,postal_code,phone_number,contact_email,description,street_address,suburb,requires_paid_membership,is_setls_member,max_items_per_member,loan_period_days,renewals_allowed,late_return_policy",
+      "id,library_name,country,city,postal_code,phone_number,contact_email,description,street_address,suburb,requires_paid_membership,membership_fee_amount,membership_fee_currency,is_setls_member,max_items_per_member,loan_period_days,renewals_allowed,late_return_policy",
     )
     .eq("owner_user_id", user.id)
     .limit(1);

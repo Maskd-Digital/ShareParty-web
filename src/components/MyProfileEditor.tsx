@@ -15,7 +15,13 @@ export type MyProfile = {
   terms_accepted_at: string | null;
 };
 
-export function MyProfileEditor({ initial }: { initial: MyProfile }) {
+export function MyProfileEditor({
+  initial,
+  subtitle = "Operator contact details and preferences.",
+}: {
+  initial: MyProfile;
+  subtitle?: string;
+}) {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,7 +69,7 @@ export function MyProfileEditor({ initial }: { initial: MyProfile }) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-forest-900">My profile</h1>
-          <p className="mt-1 text-sm text-forest-800/85">Operator contact details and preferences.</p>
+          <p className="mt-1 text-sm text-forest-800/85">{subtitle}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           {editing ? (

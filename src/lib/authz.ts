@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { hasCatalogAccess } from "@/lib/server/membershipAccess";
 
 export async function assertLibraryOperator(
   supabase: SupabaseClient,
@@ -48,6 +49,43 @@ export async function assertLibraryMember(
   if (error || !data) {
     const err = new Error("Forbidden");
     (err as Error & { status: number }).status = 403;
+    throw err;
+  }
+}
+
+export async function assertCatalogAccess(
+  supabase: SupabaseClient,
+  userId: string,
+  libraryId: string,
+): Promise<void> {
+  const { data: membership, error: mErr } = await supabase
+    .from("memberships")
+    .select("status,payment_status")
+    .eq("library_id", libraryId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (mErr || !membership) {
+    const err = new Error("Forbidden");
+    (err as Error & { status: number }).status = 403;
+    throw err;
+  }
+
+  const { data: library, error: lErr } = await supabase
+    .from("libraries")
+    .select("requires_paid_membership")
+    .eq("id", libraryId)
+    .maybeSingle();
+
+  if (lErr || !library) {
+    const err = new Error("Forbidden");
+    (err as Error & { status: number }).status = 403;
+    throw err;
+  }
+
+  if (!hasCatalogAccess(membership, library)) {
+    const err = new Error("Payment required");
+    (err as Error & { status: number }).status = 402;
     throw err;
   }
 }

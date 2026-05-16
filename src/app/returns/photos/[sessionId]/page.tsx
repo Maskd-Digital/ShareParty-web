@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { AppShell } from "@/components/AppShell";
+import { MemberPageShell } from "@/components/MemberSidebar";
 import { createClient } from "@/lib/supabase/server";
 import { ReturnPhotosClient } from "./ReturnPhotosClient";
 
@@ -13,6 +13,9 @@ export default async function ReturnPhotosPage({ params }: { params: Promise<{ s
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
+
+  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
+  if (profile?.role === "operator") redirect("/dashboard");
 
   const { data: s } = await supabase
     .from("return_inspection_sessions")
@@ -35,20 +38,20 @@ export default async function ReturnPhotosPage({ params }: { params: Promise<{ s
 
   if (s.status !== "draft") {
     return (
-      <AppShell>
-        <div className="mx-auto max-w-lg px-4 py-12 text-center">
+      <MemberPageShell active="returns">
+        <div className="space-y-4 text-center sm:text-left">
           <p className="text-sm text-forest-800/90">This return session is no longer editable.</p>
-          <Link href="/returns" className="mt-4 inline-block text-sm font-semibold text-forest-800 underline">
+          <Link href="/returns" className="inline-block text-sm font-semibold text-forest-800 underline">
             Back to my borrows
           </Link>
         </div>
-      </AppShell>
+      </MemberPageShell>
     );
   }
 
   return (
-    <AppShell>
+    <MemberPageShell active="returns">
       <ReturnPhotosClient sessionId={s.id} libraryId={s.library_id} initialUploaded={initialUploaded} />
-    </AppShell>
+    </MemberPageShell>
   );
 }

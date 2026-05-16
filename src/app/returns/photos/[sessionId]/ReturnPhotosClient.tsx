@@ -96,7 +96,7 @@ export function ReturnPhotosClient({
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:py-10">
+    <div className="mx-auto w-full max-w-3xl">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wider text-forest-700/80">Return</p>
@@ -110,7 +110,7 @@ export function ReturnPhotosClient({
         </Link>
       </div>
 
-      <div className="rounded-2xl border border-cream-300/80 bg-cream-50/90 p-6 shadow-card sm:p-8">
+      <div className="rounded-2xl border border-cream-300/80 bg-cream-100/50 p-6 sm:p-8">
         <div className="rounded-xl border border-cream-300/80 bg-cream-100/60 p-4">
           <p className="text-sm font-semibold text-forest-900">{copy.title}</p>
           <p className="mt-1 text-xs text-forest-800/80">{copy.description}</p>

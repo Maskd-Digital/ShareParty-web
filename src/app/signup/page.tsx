@@ -26,8 +26,9 @@ export default function SignupPage() {
     try {
       const supabase = createClient();
       const origin = window.location.origin;
-      const onboardingAfterSession = "/dashboard";
-      const onboardingAfterEmail = "/dashboard";
+      const afterAuth = "/dashboard";
+      const onboardingAfterSession = afterAuth;
+      const onboardingAfterEmail = afterAuth;
       const { data, error: err } = await supabase.auth.signUp({
         email,
         password,

@@ -28,12 +28,6 @@ export default async function HomePage() {
             <Link href="/dashboard" className="btn-primary text-center no-underline">
               Dashboard
             </Link>
-            <Link
-              href="/onboarding"
-              className="btn-secondary text-center no-underline"
-            >
-              Continue onboarding
-            </Link>
           </div>
         ) : (
           <div className="mt-10 flex flex-col gap-3">

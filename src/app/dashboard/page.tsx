@@ -3,6 +3,10 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AppShell } from "@/components/AppShell";
 import { OperatorSidebar } from "@/components/OperatorSidebar";
+import { MemberDashboardMain } from "@/components/MemberDashboardMain";
+import { MemberPageShell } from "@/components/MemberSidebar";
+import { loadMemberContext } from "@/lib/memberContext";
+import { loadMemberDashboardData } from "@/lib/memberDashboard";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -15,28 +19,19 @@ export default async function DashboardPage() {
   const role = profileRow?.role ?? "member";
 
   if (role !== "operator") {
+    const ctx = await loadMemberContext();
+    const dashboard = await loadMemberDashboardData(user.id);
+
     return (
-      <AppShell>
-        <div className="rounded-2xl border border-cream-300/90 bg-cream-50/90 p-8 shadow-card sm:p-10">
-          <h1 className="text-2xl font-bold text-forest-900">Member</h1>
-          <p className="mt-3 text-sm text-forest-800/85">
-            Your account is set up. An operator will add you to a library when ready.
-          </p>
-          <p className="mt-6 text-sm text-forest-800/90">
-            <Link href="/returns" className="btn-secondary inline-block no-underline">
-              My borrows and returns
-            </Link>
-          </p>
-          <form action="/auth/signout" method="post" className="mt-8">
-            <button
-              type="submit"
-              className="text-sm font-medium text-forest-700 underline decoration-forest-600/30 underline-offset-2 hover:text-forest-900"
-            >
-              Sign out
-            </button>
-          </form>
-        </div>
-      </AppShell>
+      <MemberPageShell active="dashboard">
+        <MemberDashboardMain
+          email={ctx?.email ?? user.email ?? null}
+          ctx={ctx}
+          stats={dashboard.stats}
+          activity={dashboard.activity}
+          libraryName={dashboard.libraryName}
+        />
+      </MemberPageShell>
     );
   }
 

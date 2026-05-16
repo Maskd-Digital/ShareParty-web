@@ -36,6 +36,8 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ id: strin
     loan_period_days?: number;
     renewals_allowed?: boolean;
     late_return_policy?: string | null;
+    membership_fee_amount?: number;
+    membership_fee_currency?: string;
   };
 
   const patch: Record<string, unknown> = {};
@@ -56,6 +58,12 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ id: strin
   if (body.renewals_allowed !== undefined) patch.renewals_allowed = body.renewals_allowed;
   if (body.late_return_policy !== undefined)
     patch.late_return_policy = body.late_return_policy?.trim() ? body.late_return_policy.trim() : null;
+  if (body.membership_fee_amount !== undefined) patch.membership_fee_amount = body.membership_fee_amount;
+  if (body.membership_fee_currency !== undefined) {
+    patch.membership_fee_currency = body.membership_fee_currency?.trim()
+      ? body.membership_fee_currency.trim().toUpperCase()
+      : "NZD";
+  }
 
   const { error } = await supabase.from("libraries").update(patch).eq("id", libraryId);
   if (error) {
